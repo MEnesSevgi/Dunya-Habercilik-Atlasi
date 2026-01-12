@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Dünya Habercilik Atlası</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>EVRENSEL HABERCİLİK ATLASI</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dünya Habercilik Atlası</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root { 
+            --news-black: #1a1a1a; --news-red: #d32f2f; --paper-white: #fdfdfd; 
+            --font-main: 'Georgia', serif;
+        }
+        body { margin: 0; display: flex; height: 100vh; flex-direction: row; font-family: var(--font-main); background: var(--paper-white); }
+        #map { flex: 1; height: 100%; z-index: 1; filter: sepia(0.1) contrast(1.1); }
+        #info-panel { width: 450px; background: white; display: flex; flex-direction: column; box-shadow: -5px 0 15px rgba(0,0,0,0.2); z-index: 1000; }
+        .header { background: var(--news-black); color: white; padding: 20px; text-align: center; border-bottom: 4px solid var(--news-red); }
+        .header h1 { margin: 0; font-size: 18px; letter-spacing: 2px;  }
+        .search-area { padding: 15px; border-bottom: 1px solid #ddd; background: #f5f5f5; }
+        select { width: 100%; padding: 12px; border: 2px solid var(--news-black); background: white; font-family: var(--font-main); }
+        #wiki-content { padding: 25px; overflow-y: auto; flex: 1; }
+        .title-container { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px double var(--news-black); padding-bottom: 10px; margin-bottom: 15px; }
+        #wiki-title { margin: 0; color: var(--news-black); font-size: 24px; }
+        .lang-indicator { font-size: 10px; color: var(--news-red); font-weight: bold; text-transform: uppercase; margin-top: 5px; }
+        .impact-box { background: #fff5f5; border-left: 5px solid var(--news-red); padding: 15px; margin-bottom: 20px; font-style: italic; font-size: 14px; }
+        #wiki-img { width: 100%; display: none; margin-bottom: 15px; border: 1px solid #ccc; }
+        #wiki-text { line-height: 1.8; color: #222; font-size: 15px; text-align: justify; transition: opacity 0.3s; }
+        .source-link { display: inline-block; margin-top: 20px; padding: 10px 20px; background: var(--news-black); color: white; text-decoration: none; font-size: 12px; }
+        .loader { font-size: 12px; color: #666; font-style: italic; display: none; }
+        .custom-marker { background-color: var(--news-red); border: 2px solid black; border-radius: 50%; }
+        .selected-marker { background-color: var(--news-black) !important; transform: scale(1.4); }
+        @media (max-width: 768px) { body { flex-direction: column; } #map { height: 35vh; } #info-panel { width: 100%; height: 65vh; } }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="info-panel">
+    <div class="header"><h1>Dünya Habercilik Atlası</h1></div>
+    <div class="search-area"><select id="newsSelect"><option value="">Bir Haber Noktası Seçin</option></select></div>
+    <div id="wiki-content">
+        <div class="title-container">
+            <div>
+                <h2 id="wiki-title">Keşfedin</h2>
+                <div id="lang-info" class="lang-indicator"></div>
+            </div>
+        </div>
+        <div id="loader" class="loader">Tercüme ediliyor...</div>
+        <div id="impact-container"></div>
+        <img id="wiki-img" src="">
+        <div id="wiki-text">Bir noktaya tıklayarak çok dilli veri ağından bilgi çekin.</div>
+        <a id="wiki-link" href="#" target="_blank" class="source-link" style="display:none;">ORİJİNAL KAYNAĞA GİT</a>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const newsData = [
+       
+    { year: 1605, name: "Relation (İlk Gazete)", lat: 48.57, lng: 7.75, wiki: "Relation_aller_Fürnemmen_und_gedenckwürdigen_Historien", impact: "Dünyanın basılı ilk düzenli gazetesi. Bilginin periyodikleştiği an." },
+    { year: 1702, name: "The Daily Courant", lat: 51.50, lng: -0.12, wiki: "The_Daily_Courant", impact: "İlk başarılı günlük gazete. Haberin 'günlük bir ihtiyaç' haline gelişi." },
+      { year: 1780, name: "Neue Zürcher Zeitung", lat: 47.37, lng: 8.54, wiki: "Neue_Zürcher_Zeitung", impact: "Hassas ve tarafsız dış politika haberleriyle tanınan, dünyanın en eski gazetelerinden biri." },
+    { year: 1785, name: "The Times", lat: 51.51, lng: -0.11, wiki: "The_Times", impact: "Gazetecilikte editoryal bağımsızlık ve kalite standardının kurucusu." },
+    { year: 1831, name: "Takvim-i Vekayi", lat: 41.01, lng: 28.97, wiki: "Takvim-i_Vekayi", impact: "Osmanlı'nın ilk resmi gazetesi ve Türk basın tarihinin başlangıcı." },
+    { year: 1833, name: "The Sun (Penny Press)", lat: 40.71, lng: -74.00, wiki: "The_Sun_(New_York_City)", impact: "Gazeteyi 1 penny'e indirerek haberi kitlelere ulaştıran 'Penny Press' akımı." },
+
+   
+    { year: 1835, name: "AFP (Havas)", lat: 48.86, lng: 2.34, wiki: "Agence_France-Presse", impact: "Dünyanın ilk haber ajansı. Bilginin küresel bir meta haline gelişi." },
+      { year: 1838, name: "The Times of India", lat: 18.92, lng: 72.83, wiki: "The_Times_of_India", impact: "Dünyanın en çok satan İngilizce gazetesi. Asya'daki devasa okur kitlesinin ana haber kaynağı." },
+    { year: 1846, name: "Associated Press (AP)", lat: 40.75, lng: -73.98, wiki: "Associated_Press", impact: "Haber paylaşımı için kurulan ilk büyük kooperatif." },
+    { year: 1848, name: "Reuters", lat: 51.51, lng: -0.10, wiki: "Reuters", impact: "Güvercinlerden telgrafa, haber hızını finans dünyasıyla birleştiren dev." },
+     
+    { year: 1860, name: "Tercüman-ı Ahvâl", lat: 41.02, lng: 28.97, wiki: "Tercüman-ı_Ahvâl", impact: "Türk basın tarihinin ilk özel gazetesi. Haber dilinin sadeleşmesi ve fikir gazeteciliğinin başlangıcı." },
+     
+    { year: 1870, name: "La Nación", lat: -34.60, lng: -58.38, wiki: "La_Nación_(Buenos_Aires)", impact: "Güney Amerika'nın en etkili gazetelerinden biri. Hispanik dünyasında entelektüel haberciliğin kalesi." },
+      { year: 1876, name: "Al-Ahram", lat: 30.04, lng: 31.23, wiki: "Al-Ahram", impact: "Arap dünyasının en köklü ve Orta Doğu'nun en etkili günlük gazetelerinden biri." },
+      { year: 1876, name: "Corriere della Sera", lat: 45.46, lng: 9.18, wiki: "Corriere_della_Sera", impact: "İtalya'nın en eski ve en çok okunan, genel haber odaklı günlük gazetesi." },
+  
+      { year: 1888, name: "National Geographic", lat: 38.90, lng: -77.03, wiki: "National_Geographic", impact: "Keşif ve bilim haberciliğinin zirvesi. Görsel anlatımın haberle birleştiği en köklü mecra." },
+      { year: 1896, name: "La Gazzetta dello Sport", lat: 45.46, lng: 9.18, wiki: "La_Gazzetta_dello_Sport", impact: "Pembe kağıda basılmasıyla ünlü, İtalya'nın en köklü ve bisiklet yarışı (Giro d'Italia) kurucusu olan spor gazetesi." },
+      { year: 1898, name: "Jane's Defence Weekly", lat: 51.37, lng: -0.10, wiki: "Jane's_Defence_Weekly", impact: "Askeri teknoloji ve savunma sanayisi konusunda dünyanın en prestijli ve güvenilir haber kaynağı." },
+ { year: 1906, name: "Mundo Deportivo", lat: 41.38, lng: 2.17, wiki: "Mundo_Deportivo", impact: "Barselona merkezli, Avrupa'nın en eski spor gazetelerinden biri; Katalan spor dünyasının ana sesidir." },
+      { year: 1909, name: "FlightGlobal", lat: 51.45, lng: -0.15, wiki: "FlightGlobal", impact: "Havacılık endüstrisi ve hava savunma sistemleri üzerine uzmanlaşmış köklü haber platformu." },
+     
+    { year: 1912, name: "Pravda", lat: 55.75, lng: 37.61, wiki: "Pravda", impact: "Sovyetler Birliği'nin resmi yayın organı. Haberin kitleleri mobilize etmek için nasıl bir araç (propaganda) olarak kullanılabileceğinin tarihteki en büyük örneği." },
+   { year: 1916, name: "Aviation Week & Space Technology", lat: 40.75, lng: -73.98, wiki: "Aviation_Week_%26_Space_Technology", impact: "Havacılık, uzay ve savunma teknolojileri konusundaki en köklü ve teknik haber dergisi." },
+         { year: 1920, name: "Anadolu Ajansı", lat: 39.93, lng: 32.85, wiki: "Anadolu_Ajansı", impact: "Kurtuluş Savaşı'nın haklılığını dünyaya duyurmak için kurulan milli ajans." },
+    { year: 1922, name: "BBC", lat: 51.51, lng: -0.14, wiki: "BBC", impact: "Kamu yayıncılığı felsefesinin dünyadaki öncüsü ve en güvenilir sesi." },
+      { year: 1924, name: "L'Orient-Le Jour", lat: 33.89, lng: 35.50, wiki: "L'Orient-Le_Jour", impact: "Beyrut merkezli, Ortadoğu'nun en köklü entelektüel gazetelerinden biri. Çok dilli habercilik geleneği." },
+{ year: 1925, name: "O Globo", lat: -22.90, lng: -43.17, wiki: "O_Globo", impact: "Brezilya merkezli, Latin Amerika'nın en büyük medya ve televizyon ağlarından biri." },
+      
+ 
+
+   { year: 1936, name: "CBC", lat: 45.42, lng: -75.69, wiki: "Canadian_Broadcasting_Corporation", impact: "Kanada'nın radyo ve televizyon üzerinden yayın yapan ulusal kamu haber ağı." },
+      { year: 1938, name: "Marca", lat: 40.45, lng: -3.68, wiki: "Marca_(gazete)", impact: "İspanya'nın en çok okunan spor gazetesi; Real Madrid odaklı haberleri ve 'Pichichi' ödülüyle tanınır." },
+      
+    { year: 1944, name: "Xinhua News Agency", lat: 39.90, lng: 116.39, wiki: "Xinhua_News_Agency", impact: "Dünyanın en büyük haber ajanslarından biri. Batı merkezli bilgi akışına karşı Doğu'nun en büyük haber üretim merkezi." },
+      { year: 1946, name: "L'Équipe", lat: 48.83, lng: 2.24, wiki: "L'Équipe", impact: "Şampiyonlar Ligi ve Ballon d'Or gibi dev organizasyonların fikir babası olan efsanevi spor gazetesi." },
+   
+    { year: 1947, name: "Magnum Photos", lat: 48.85, lng: 2.35, wiki: "Magnum_Photos", impact: "Haberin sadece yazı değil, bir 'tanıklık fotoğrafı' haline gelmesi. Savaş muhabirliğinin görsel estetikle birleştiği nokta." },
+      { year: 1948, name: "Hürriyet", lat: 41.06, lng: 28.81, wiki: "Hürriyet_(gazete)", impact: "Türkiye'nin uzun yıllar 'Amiral Gemisi' olarak bilinen en yüksek tirajlı gazetesi." },
+      { year: 1948, name: "L'Espresso / Paparazzi", lat: 41.90, lng: 12.49, wiki: "Paparazzo", impact: "İtalya'da doğan 'Paparazzi' kavramı. Haberin özel hayata girdiği ve magazin haberciliğinin profesyonelleştiği nokta." },
+    { year: 1953, name: "NHK News", lat: 35.66, lng: 139.70, wiki: "NHK", impact: "Asya'nın en köklü kamu yayıncısı; teknoloji ve haberin Asya'daki birleşimi." },
+      { year: 1954, name: "Sports Illustrated", lat: 40.75, lng: -73.98, wiki: "Sports_Illustrated", impact: "Sporu sanatsal fotoğraflar ve derinlemesine hikayelerle anlatan dünyanın en ünlü spor dergisi." },
+      { year: 1958, name: "Daily Graphic", lat: 5.60, lng: -0.19, wiki: "Daily_Graphic_(Ghana)", impact: "Batı Afrika'da bağımsızlık sonrası haberciliğin ve sömürge sonrası sesin en önemli temsilcisi." },
+      { year: 1964, name: "TRT", lat: 39.90, lng: 32.81, wiki: "TRT", impact: "Türkiye'nin ulusal kamu yayıncısı; radyo ve televizyon haberciliğinin okulu." },
+      { year: 1967, name: "Diario AS", lat: 40.41, lng: -3.70, wiki: "AS_(gazete)", impact: "Madrid merkezli günlük spor gazetesi; özellikle futbol ve bisiklet haberciliğinde uzmanlaşmıştır." },
+       { year: 1972, name: "The Washington Post", lat: 38.90, lng: -77.03, wiki: "The_Washington_Post", impact: "Watergate Skandalı ile bir hükümeti düşüren gazetecilik gücü." },
+      { year: 1976, name: "El País", lat: 40.41, lng: -3.70, wiki: "El_País", impact: "İspanya'da demokrasiye geçiş sonrası kurulan, dünyanın en çok okunan İspanyolca gazetesi." },
+      { year: 1979, name: "ESPN", lat: 41.67, lng: -72.90, wiki: "ESPN", impact: "Dünyanın en büyük spor yayın ağı; sporu 24 saat kesintisiz haber ve eğlenceye dönüştüren mecra." },
+          { 
+    year: 1979, 
+    name: "News Corp (Murdoch Devrimi)", 
+    lat: -33.86, 
+    lng: 151.20, 
+    wiki: "News_Corp", 
+    impact: "Rupert Murdoch'un yerel bir Avustralya gazetesinden küresel bir medya imparatorluğuna (Fox, Times, WSJ) uzanan devasa yapısının resmileşmesi." 
+},
+    { year: 1980, name: "CNN", lat: 33.75, lng: -84.39, wiki: "CNN", impact: "24 saat canlı yayın devrimi; dünyayı 'küresel bir köy' haline getiren kanal." },
+          { year: 1985, name: "Mail & Guardian", lat: -26.20, lng: 28.04, wiki: "Mail_%26_Guardian", impact: "Afrika'nın ilk çevrimiçi haber sitesi ve araştırmacı gazeteciliğin kıtadaki öncüsü." },
+      { year: 1986, name: "Defense News", lat: 38.89, lng: -77.03, wiki: "Defense_News", impact: "Savunma sanayisi iş birlikleri, politikaları ve bütçeleri üzerine odaklanan küresel yayın." },
+      
+    { year: 1991, name: "Sky News", lat: 51.48, lng: -0.31, wiki: "Sky_News", impact: "Avrupa'nın ilk 24 saatlik haber kanalı." },
+      { year: 1993, name: "Novaya Gazeta", lat: 55.75, lng: 37.61, wiki: "Novaya_Gazeta", impact: "Novaya Gazetesi, Rusya'nın siyasi ve sosyal meselelerine eleştirel ve araştırmacı bir şekilde yer vermesiyle tanınan bağımsız bir Rus gazetesidir. " },
+      { year: 1995, name: "Fanatik", lat: 41.06, lng: 28.99, wiki: "Fanatik_(gazete)", impact: "Türkiye'nin sadece spor içeriğine odaklanan, en yüksek tirajlı ilk ve en köklü spor gazetelerinden biri." },
+    { year: 1996, name: "Al Jazeera", lat: 25.28, lng: 51.53, wiki: "Al_Jazeera", impact: "Orta Doğu perspektifini küresel ana akıma taşıyan ilk büyük ağ." },
+      
+    { year: 1997, name: "ICIJ (Araştırmacı Gazeteciler Konsorsiyumu)", lat: 38.89, lng: -77.03, wiki: "International_Consortium_of_Investigative_Journalists", impact: "Panama Papers gibi sızıntılarla veri gazeteciliğinin zirvesi. Tek bir gazete yerine küresel bir gazeteci ağının gücü." },
+   
+    { year: 2005, name: "HuffPost", lat: 40.73, lng: -73.99, wiki: "HuffPost", impact: "Tamamen dijital doğan haberciliğin ve blog kültürünün yükselişi." },
+    { year: 2006, name: "WikiLeaks", lat: 59.33, lng: 18.06, wiki: "WikiLeaks", impact: "Anonim kaynaklara dayanarak hassas belgeler yayımlayan ve kâr amacı gütmeyen uluslararası bir sivil toplum kuruluşudur. " },
+      { year: 2010, name: "The Guardian (Dijital Dönüşüm)", lat: 51.53, lng: -0.12, wiki: "The_Guardian", impact: "Edward Snowden sızıntıları ve dijital abonelik modeliyle modern medyanın ayakta kalma formülü." },
+ 
+    { year: 2012, name: "ByteDance (Toutiao)", lat: 39.90, lng: 116.40, wiki: "Toutiao", impact: "Yapay zeka algoritmalarıyla kişiselleştirilmiş haber akışının başladığı nokta." },
+      
+      { year: 2013, name: "The Intercept", lat: 40.71, lng: -74.00, wiki: "The_Intercept", impact: "Dünya çapındaki gizli kalmış olayları belgelerle ortaya çıkaran bağımsız bir haber portalı." },
+   
+    ];
+
+    const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    const markers = {};
+    const select = document.getElementById('newsSelect');
+    const languages = ['tr', 'en', 'de', 'fr', 'ru', 'es']; 
+
+    newsData.forEach(item => {
+        const marker = L.divIcon({ className: 'custom-marker', iconSize: [12, 12] });
+        const m = L.marker([item.lat, item.lng], { icon: marker }).addTo(map);
+        markers[item.name] = m;
+        const opt = document.createElement('option');
+        opt.value = item.name; opt.textContent = `${item.year} - ${item.name}`;
+        select.appendChild(opt);
+        m.on('click', () => showDetails(item));
+    });
+
+    // OTOMATİK ÇEVİRİ FONKSİYONU
+    async function translateText(text, sourceLang) {
+        if (sourceLang === 'tr') return text; // Zaten Türkçeyse dokunma
+        
+        try {
+            const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=tr&dt=t&q=${encodeURI(text)}`);
+            const data = await res.json();
+            return data[0].map(x => x[0]).join('');
+        } catch (e) {
+            console.error("Çeviri hatası:", e);
+            return text + " (Çeviri yapılamadı)";
+        }
+    }
+
+    async function showDetails(item) {
+        Object.values(markers).forEach(m => L.DomUtil.removeClass(m._icon, 'selected-marker'));
+        L.DomUtil.addClass(markers[item.name]._icon, 'selected-marker');
+
+        document.getElementById('wiki-title').textContent = item.name;
+        document.getElementById('impact-container').innerHTML = `<div class="impact-box">${item.impact}</div>`;
+        document.getElementById('wiki-text').textContent = "Veri ağından bilgi çekiliyor...";
+        document.getElementById('loader').style.display = 'none';
+
+        let foundData = null;
+        let foundLang = "";
+
+        for (const lang of languages) {
+            try {
+                const response = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${item.wiki}`);
+                if (response.ok) {
+                    foundData = await response.json();
+                    foundLang = lang;
+                    break;
+                }
+            } catch (e) { continue; }
+        }
+
+        if (foundData) {
+            if (foundLang !== 'tr') {
+                document.getElementById('loader').style.display = 'block';
+                document.getElementById('wiki-text').style.opacity = '0.5';
+                
+                // Metni Türkçeye çevir
+                const translated = await translateText(foundData.extract, foundLang);
+                
+                document.getElementById('wiki-text').textContent = translated;
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('wiki-text').style.opacity = '1';
+            } else {
+                document.getElementById('wiki-text').textContent = foundData.extract;
+            }
+
+            document.getElementById('lang-info').textContent = `Kaynak: ${foundLang.toUpperCase()} Wikipedia (Otomatik Çevrildi)`;
+            
+            if (foundData.thumbnail) {
+                document.getElementById('wiki-img').src = foundData.thumbnail.source;
+                document.getElementById('wiki-img').style.display = 'block';
+            } else {
+                document.getElementById('wiki-img').style.display = 'none';
+            }
+            document.getElementById('wiki-link').href = foundData.content_urls.desktop.page;
+            document.getElementById('wiki-link').style.display = 'inline-block';
+        } else {
+            document.getElementById('wiki-text').textContent = "Bilgiye ulaşılamadı.";
+        }
+    }
+
+    select.onchange = (e) => {
+        const item = newsData.find(d => d.name === e.target.value);
+        if (item) { map.flyTo([item.lat, item.lng], 6); showDetails(item); }
+    };
+</script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
+    
+  </body>
+  
+</html>
